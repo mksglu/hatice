@@ -1,0 +1,37 @@
+{
+  "name": "hatice",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Autonomous issue orchestration system powered by Claude Code Agent SDK",
+  "author": "Mert Koseoglu",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "hatice": "./dist/bin/hatice.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsx bin/hatice.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.70",
+    "@hono/node-server": "^1.19.11",
+    "commander": "^13.0.0",
+    "gray-matter": "^4.0.3",
+    "hono": "^4.12.5",
+    "liquidjs": "^10.17.0",
+    "pino": "^9.5.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

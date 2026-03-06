@@ -1,0 +1,53 @@
+{
+  "data": {
+    "issues": {
+      "nodes": [
+        {
+          "id": "issue-1",
+          "identifier": "PROJ-1",
+          "title": "Fix authentication bug",
+          "description": "Users are unable to login",
+          "state": { "name": "Todo" },
+          "priority": 1,
+          "branchName": "fix/auth-bug",
+          "url": "https://linear.app/proj/issue/PROJ-1",
+          "assignee": { "id": "user-1", "name": "John Doe" },
+          "labels": { "nodes": [{ "name": "Bug" }, { "name": "Critical" }] },
+          "inverseRelations": { "nodes": [] },
+          "createdAt": "2026-01-01T00:00:00.000Z",
+          "updatedAt": "2026-01-02T00:00:00.000Z"
+        },
+        {
+          "id": "issue-2",
+          "identifier": "PROJ-2",
+          "title": "Add dark mode",
+          "description": "Implement dark mode theme",
+          "state": { "name": "In Progress" },
+          "priority": 2,
+          "branchName": "feat/dark-mode",
+          "url": "https://linear.app/proj/issue/PROJ-2",
+          "assignee": null,
+          "labels": { "nodes": [{ "name": "Feature" }] },
+          "inverseRelations": {
+            "nodes": [
+              {
+                "type": "blocks",
+                "issue": {
+                  "id": "issue-1",
+                  "identifier": "PROJ-1",
+                  "state": { "name": "Todo" }
+                }
+              }
+            ]
+          },
+          "createdAt": "2026-01-03T00:00:00.000Z",
+          "updatedAt": "2026-01-04T00:00:00.000Z"
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": "cursor-abc"
+      }
+    }
+  }
+}

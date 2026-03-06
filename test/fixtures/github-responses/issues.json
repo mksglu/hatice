@@ -1,0 +1,66 @@
+{
+  "data": {
+    "repository": {
+      "issues": {
+        "nodes": [
+          {
+            "id": "I_kwDOA1",
+            "number": 42,
+            "title": "Fix CI pipeline",
+            "body": "The CI pipeline is failing on main",
+            "state": "OPEN",
+            "url": "https://github.com/org/repo/issues/42",
+            "createdAt": "2026-01-01T00:00:00Z",
+            "updatedAt": "2026-01-02T00:00:00Z",
+            "assignees": { "nodes": [{ "login": "dev1", "id": "U_1" }] },
+            "labels": { "nodes": [{ "name": "bug" }, { "name": "Priority: High" }] },
+            "projectItems": {
+              "nodes": [
+                {
+                  "fieldValueByName": {
+                    "name": "Todo"
+                  }
+                }
+              ]
+            },
+            "trackedInIssues": { "nodes": [] }
+          },
+          {
+            "id": "I_kwDOA2",
+            "number": 43,
+            "title": "Add feature X",
+            "body": null,
+            "state": "OPEN",
+            "url": "https://github.com/org/repo/issues/43",
+            "createdAt": "2026-01-03T00:00:00Z",
+            "updatedAt": "2026-01-04T00:00:00Z",
+            "assignees": { "nodes": [] },
+            "labels": { "nodes": [{ "name": "enhancement" }] },
+            "projectItems": {
+              "nodes": [
+                {
+                  "fieldValueByName": {
+                    "name": "In Progress"
+                  }
+                }
+              ]
+            },
+            "trackedInIssues": {
+              "nodes": [
+                {
+                  "id": "I_kwDOA1",
+                  "number": 42,
+                  "state": "OPEN"
+                }
+              ]
+            }
+          }
+        ],
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": "Y3Vyc29yOjI="
+        }
+      }
+    }
+  }
+}
