@@ -2,31 +2,32 @@ import type { OrchestratorSnapshot, SnapshotRunningEntry, SnapshotRetryEntry } f
 
 /**
  * Renders a rich, SSE-powered HTML dashboard for hatice.
- * Dark theme, monospace, cyberpunk-inspired. No external dependencies.
+ * Inspired by Claude/Anthropic's warm, editorial design language.
+ * Tailwind CSS via CDN + custom design tokens.
  */
 export function renderLiveDashboard(snapshot: OrchestratorSnapshot): string {
   const runningRows = snapshot.running.length > 0
     ? snapshot.running.map((r: SnapshotRunningEntry) =>
-        `<tr>
-          <td class="cell-id">${esc(r.identifier)}</td>
-          <td><span class="badge badge-${stateBadge(r.state)}">${esc(r.state)}</span></td>
-          <td>${r.runtimeSeconds.toFixed(0)}s</td>
-          <td>${fmt(r.tokenUsage.totalTokens)}</td>
-          <td class="cell-event">${esc(r.lastEvent ?? '-')}</td>
+        `<tr class="group border-b border-sand-200 last:border-0 transition-colors hover:bg-sand-50">
+          <td class="py-3.5 px-4 font-semibold text-clay-900">${esc(r.identifier)}</td>
+          <td class="py-3.5 px-4"><span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${stateBadgeClass(r.state)}">${esc(r.state)}</span></td>
+          <td class="py-3.5 px-4 tabular-nums text-clay-600">${r.runtimeSeconds.toFixed(0)}s</td>
+          <td class="py-3.5 px-4 tabular-nums text-clay-600">${fmt(r.tokenUsage.totalTokens)}</td>
+          <td class="py-3.5 px-4 text-clay-400 max-w-[280px] truncate text-sm">${esc(r.lastEvent ?? '-')}</td>
         </tr>`
       ).join('')
-    : '<tr><td colspan="5" class="empty-row">No agents running</td></tr>';
+    : '<tr><td colspan="5" class="py-8 text-center text-clay-400 italic text-sm">No agents running</td></tr>';
 
   const retryRows = snapshot.retrying.length > 0
     ? snapshot.retrying.map((r: SnapshotRetryEntry) =>
-        `<tr>
-          <td class="cell-id">${esc(r.identifier)}</td>
-          <td>${r.attempt}</td>
-          <td>${(r.nextRetryInMs / 1000).toFixed(1)}s</td>
-          <td class="cell-error">${esc(r.lastError ?? '-')}</td>
+        `<tr class="group border-b border-sand-200 last:border-0 transition-colors hover:bg-sand-50">
+          <td class="py-3.5 px-4 font-semibold text-clay-900">${esc(r.identifier)}</td>
+          <td class="py-3.5 px-4 tabular-nums text-clay-600">${r.attempt}</td>
+          <td class="py-3.5 px-4 tabular-nums text-clay-600">${(r.nextRetryInMs / 1000).toFixed(1)}s</td>
+          <td class="py-3.5 px-4 text-rose-600 max-w-[360px] truncate text-sm">${esc(r.lastError ?? '-')}</td>
         </tr>`
       ).join('')
-    : '<tr><td colspan="4" class="empty-row">No retries pending</td></tr>';
+    : '<tr><td colspan="4" class="py-8 text-center text-clay-400 italic text-sm">No retries pending</td></tr>';
 
   const totals = snapshot.totals;
   const costUsd = computeCostFromRunning(snapshot.running);
@@ -38,195 +39,268 @@ export function renderLiveDashboard(snapshot: OrchestratorSnapshot): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>hatice // live dashboard</title>
+<title>hatice — dashboard</title>
 <noscript><meta http-equiv="refresh" content="5"></noscript>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        sand: {
+          50: '#FAFAF7',
+          100: '#F5F0E8',
+          200: '#E8E0D0',
+          300: '#D4C9B5',
+          400: '#B8A88E',
+          500: '#9C8B6E',
+          600: '#7D6F56',
+          700: '#5E5340',
+          800: '#40392C',
+          900: '#231F18',
+        },
+        clay: {
+          50: '#F9F8F7',
+          100: '#F0EDEA',
+          200: '#DDD8D2',
+          300: '#C4BCB2',
+          400: '#A09689',
+          500: '#7D7266',
+          600: '#635A50',
+          700: '#4A433B',
+          800: '#332E28',
+          900: '#1C1917',
+        },
+        ember: {
+          50: '#FFF8F1',
+          100: '#FFE8D1',
+          200: '#FFCFA0',
+          300: '#FFB06B',
+          400: '#FF8C38',
+          500: '#E07020',
+          600: '#C05A10',
+          700: '#9A4508',
+          800: '#6F3206',
+          900: '#442004',
+        },
+        sage: {
+          50: '#F4F7F4',
+          100: '#E0E8E0',
+          200: '#B8CCB8',
+          300: '#8BAF8B',
+          400: '#5E8E5E',
+          500: '#3D7A3D',
+          600: '#2D5F2D',
+          700: '#224822',
+          800: '#183218',
+          900: '#0F1F0F',
+        },
+      },
+      fontFamily: {
+        display: ['"Instrument Serif"', 'Georgia', 'serif'],
+        body: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+      },
+      animation: {
+        'breathe': 'breathe 3s ease-in-out infinite',
+        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+        'fade-in': 'fadeIn 0.6s ease-out',
+        'flash-row': 'flashRow 0.8s ease-out',
+      },
+      keyframes: {
+        breathe: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.4' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        flashRow: {
+          '0%': { backgroundColor: 'rgba(224, 112, 32, 0.08)' },
+          '100%': { backgroundColor: 'transparent' },
+        },
+      },
+    },
+  },
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
-    background: #0d1117; color: #c9d1d9; padding: 24px 32px;
-    line-height: 1.5; min-height: 100vh;
+  body { font-family: 'DM Sans', system-ui, sans-serif; }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+  .grain::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 50;
   }
-  a { color: #58a6ff; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-
-  /* Hero */
-  .hero { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; border-bottom: 1px solid #21262d; padding-bottom: 24px; }
-  .hero-title { font-size: 28px; font-weight: 700; letter-spacing: 2px; color: #58a6ff; text-transform: lowercase; }
-  .hero-sub { font-size: 13px; color: #484f58; margin-top: 2px; }
-  .status-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
-    padding: 4px 12px; border-radius: 12px; border: 1px solid;
-  }
-  .status-live { color: #3fb950; border-color: #238636; background: rgba(63,185,80,0.1); }
-  .status-live::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #3fb950; animation: pulse 1.5s infinite; }
-  .status-offline { color: #f85149; border-color: #da3633; background: rgba(248,81,73,0.1); }
-  .status-offline::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #f85149; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-  /* Stats cards */
-  .stats-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px; margin-bottom: 32px;
-  }
-  .stat-card {
-    background: #161b22; border: 1px solid #21262d; border-radius: 8px;
-    padding: 16px; transition: border-color 0.2s;
-  }
-  .stat-card:hover { border-color: #30363d; }
-  .stat-label { font-size: 11px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-  .stat-value { font-size: 24px; font-weight: 700; }
-  .stat-running .stat-value { color: #58a6ff; }
-  .stat-retrying .stat-value { color: #d29922; }
-  .stat-completed .stat-value { color: #3fb950; }
-  .stat-tokens .stat-value { color: #bc8cff; }
-
-  /* Section */
-  .section { margin-bottom: 32px; }
-  .section-header {
-    font-size: 14px; font-weight: 600; color: #58a6ff; text-transform: uppercase;
-    letter-spacing: 1.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
-  }
-  .section-header::before { content: '//'; color: #30363d; }
-
-  /* Tables */
-  table { width: 100%; border-collapse: collapse; background: #161b22; border-radius: 8px; overflow: hidden; }
-  thead th {
-    text-align: left; padding: 10px 14px; font-size: 11px; text-transform: uppercase;
-    letter-spacing: 1px; color: #484f58; border-bottom: 1px solid #21262d; background: #0d1117;
-  }
-  tbody td { padding: 10px 14px; border-bottom: 1px solid #21262d; font-size: 13px; }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover { background: rgba(88,166,255,0.04); }
-  .cell-id { color: #58a6ff; font-weight: 600; }
-  .cell-event { color: #8b949e; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cell-error { color: #f85149; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .empty-row { color: #484f58; font-style: italic; text-align: center; }
-
-  /* Badges */
-  .badge {
-    display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px;
-    border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .badge-running { color: #58a6ff; background: rgba(88,166,255,0.15); }
-  .badge-success { color: #3fb950; background: rgba(63,185,80,0.15); }
-  .badge-warning { color: #d29922; background: rgba(210,153,34,0.15); }
-  .badge-error { color: #f85149; background: rgba(248,81,73,0.15); }
-
-  /* Token summary */
-  .token-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 8px;
-  }
-  .token-item {
-    background: #161b22; border: 1px solid #21262d; border-radius: 6px;
-    padding: 12px; text-align: center;
-  }
-  .token-item .label { font-size: 10px; color: #484f58; text-transform: uppercase; letter-spacing: 1px; }
-  .token-item .value { font-size: 18px; font-weight: 700; color: #c9d1d9; margin-top: 4px; }
-  .token-item .value.cost { color: #3fb950; }
-
-  /* Rate limit & polling */
-  .info-bar {
-    display: flex; flex-wrap: wrap; gap: 24px; padding: 12px 16px;
-    background: #161b22; border: 1px solid #21262d; border-radius: 8px;
-    font-size: 12px; color: #8b949e; margin-bottom: 16px;
-  }
-  .info-item { display: flex; align-items: center; gap: 6px; }
-  .info-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .info-dot.ok { background: #3fb950; }
-  .info-dot.warn { background: #d29922; }
-  .info-dot.err { background: #f85149; }
-
-  /* Footer */
-  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #21262d; font-size: 11px; color: #30363d; text-align: center; }
-
-  /* SSE update flash */
-  @keyframes flash { 0% { background: rgba(88,166,255,0.08); } 100% { background: transparent; } }
-  .flash { animation: flash 0.6s ease-out; }
 </style>
 </head>
-<body>
+<body class="grain bg-sand-100 text-clay-800 min-h-screen antialiased">
 
-<!-- Hero -->
-<header class="hero">
-  <div>
-    <div class="hero-title">hatice</div>
-    <div class="hero-sub">autonomous agent orchestrator</div>
-  </div>
-  <span id="status-badge" class="status-badge status-live">live</span>
-</header>
-
-<!-- Stats -->
-<div class="stats-grid" id="stats-grid">
-  <div class="stat-card stat-running">
-    <div class="stat-label">Running</div>
-    <div class="stat-value" id="stat-running">${snapshot.running.length}</div>
-  </div>
-  <div class="stat-card stat-retrying">
-    <div class="stat-label">Retrying</div>
-    <div class="stat-value" id="stat-retrying">${snapshot.retrying.length}</div>
-  </div>
-  <div class="stat-card stat-completed">
-    <div class="stat-label">Completed</div>
-    <div class="stat-value" id="stat-completed">${snapshot.completed}</div>
-  </div>
-  <div class="stat-card stat-tokens">
-    <div class="stat-label">Total Tokens</div>
-    <div class="stat-value" id="stat-tokens">${fmt(totals.totalTokens)}</div>
-  </div>
+<!-- Ambient background -->
+<div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+  <div class="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-ember-100/40 via-sand-200/20 to-transparent blur-3xl"></div>
+  <div class="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-sage-100/30 via-sand-100/10 to-transparent blur-3xl"></div>
 </div>
 
-<!-- Rate limit & Polling info -->
-<div class="info-bar" id="info-bar">
-  <div class="info-item">
-    <span class="info-dot ok" id="rate-limit-dot"></span>
-    <span id="rate-limit-text">Rate limit: OK</span>
-  </div>
-  <div class="info-item">
-    <span>Polling interval: <strong id="poll-interval">${(snapshot.polling.intervalMs / 1000).toFixed(0)}s</strong></span>
-  </div>
-  <div class="info-item">
-    <span>Next poll: <strong id="poll-next">${(snapshot.polling.nextPollInMs / 1000).toFixed(1)}s</strong></span>
-  </div>
-  <div class="info-item">
-    <span>Uptime: <strong id="uptime">${formatUptime(totals.secondsRunning)}</strong></span>
-  </div>
-</div>
+<div class="max-w-6xl mx-auto px-6 py-10">
 
-<!-- Running Agents -->
-<div class="section">
-  <div class="section-header">Running Agents</div>
-  <table>
-    <thead><tr><th>Identifier</th><th>State</th><th>Session Age</th><th>Tokens Used</th><th>Last Event</th></tr></thead>
-    <tbody id="running-tbody">${runningRows}</tbody>
-  </table>
-</div>
+  <!-- Header -->
+  <header class="flex items-end justify-between mb-12 animate-fade-in">
+    <div>
+      <h1 class="font-display text-5xl text-clay-900 tracking-tight leading-none mb-2">hatice</h1>
+      <p class="text-clay-400 text-sm tracking-wide">Autonomous agent orchestrator</p>
+    </div>
+    <div class="flex items-center gap-4">
+      <span id="status-badge" class="inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase px-3.5 py-1.5 rounded-full bg-sage-50 text-sage-600 border border-sage-200">
+        <span class="w-1.5 h-1.5 rounded-full bg-sage-500 animate-breathe"></span>
+        live
+      </span>
+      <span class="text-xs text-clay-400 font-mono tabular-nums" id="uptime">${formatUptime(totals.secondsRunning)}</span>
+    </div>
+  </header>
 
-<!-- Retry Queue -->
-<div class="section">
-  <div class="section-header">Retry Queue</div>
-  <table>
-    <thead><tr><th>Identifier</th><th>Attempt #</th><th>Next Retry</th><th>Last Error</th></tr></thead>
-    <tbody id="retry-tbody">${retryRows}</tbody>
-  </table>
-</div>
-
-<!-- Token Usage Summary -->
-<div class="section">
-  <div class="section-header">Token Usage</div>
-  <div class="token-grid" id="token-grid">
-    <div class="token-item"><div class="label">Input</div><div class="value" id="tok-input">${fmt(totals.inputTokens)}</div></div>
-    <div class="token-item"><div class="label">Output</div><div class="value" id="tok-output">${fmt(totals.outputTokens)}</div></div>
-    <div class="token-item"><div class="label">Total</div><div class="value" id="tok-total">${fmt(totals.totalTokens)}</div></div>
-    <div class="token-item"><div class="label">Cache Read</div><div class="value" id="tok-cache-read">${fmt(cacheRead)}</div></div>
-    <div class="token-item"><div class="label">Cache Creation</div><div class="value" id="tok-cache-create">${fmt(cacheCreation)}</div></div>
-    <div class="token-item"><div class="label">Cost USD</div><div class="value cost" id="tok-cost">$${costUsd.toFixed(4)}</div></div>
+  <!-- Stat cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10" id="stats-grid">
+    <div class="group relative bg-white/70 backdrop-blur-sm border border-sand-200 rounded-2xl p-5 transition-all hover:border-sand-300 hover:shadow-sm animate-slide-up" style="animation-delay: 0ms">
+      <div class="text-[11px] font-medium text-clay-400 uppercase tracking-widest mb-1">Running</div>
+      <div class="text-3xl font-semibold text-clay-900 font-mono tabular-nums" id="stat-running">${snapshot.running.length}</div>
+      <div class="absolute top-4 right-4 w-8 h-8 rounded-full bg-ember-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-ember-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div class="group relative bg-white/70 backdrop-blur-sm border border-sand-200 rounded-2xl p-5 transition-all hover:border-sand-300 hover:shadow-sm animate-slide-up" style="animation-delay: 60ms">
+      <div class="text-[11px] font-medium text-clay-400 uppercase tracking-widest mb-1">Retrying</div>
+      <div class="text-3xl font-semibold text-clay-900 font-mono tabular-nums" id="stat-retrying">${snapshot.retrying.length}</div>
+      <div class="absolute top-4 right-4 w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </div>
+    </div>
+    <div class="group relative bg-white/70 backdrop-blur-sm border border-sand-200 rounded-2xl p-5 transition-all hover:border-sand-300 hover:shadow-sm animate-slide-up" style="animation-delay: 120ms">
+      <div class="text-[11px] font-medium text-clay-400 uppercase tracking-widest mb-1">Completed</div>
+      <div class="text-3xl font-semibold text-clay-900 font-mono tabular-nums" id="stat-completed">${snapshot.completed}</div>
+      <div class="absolute top-4 right-4 w-8 h-8 rounded-full bg-sage-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-sage-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div class="group relative bg-white/70 backdrop-blur-sm border border-sand-200 rounded-2xl p-5 transition-all hover:border-sand-300 hover:shadow-sm animate-slide-up" style="animation-delay: 180ms">
+      <div class="text-[11px] font-medium text-clay-400 uppercase tracking-widest mb-1">Total Tokens</div>
+      <div class="text-3xl font-semibold text-clay-900 font-mono tabular-nums" id="stat-tokens">${fmt(totals.totalTokens)}</div>
+      <div class="absolute top-4 right-4 w-8 h-8 rounded-full bg-clay-50 flex items-center justify-center">
+        <svg class="w-4 h-4 text-clay-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+      </div>
+    </div>
   </div>
-</div>
 
-<footer class="footer">hatice v0.1 &mdash; autonomous agent orchestrator</footer>
+  <!-- System info bar -->
+  <div class="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3 mb-8 bg-white/50 backdrop-blur-sm border border-sand-200 rounded-xl text-xs text-clay-500" id="info-bar">
+    <div class="flex items-center gap-2">
+      <span class="w-1.5 h-1.5 rounded-full bg-sage-500" id="rate-limit-dot"></span>
+      <span id="rate-limit-text">Rate limit OK</span>
+    </div>
+    <div class="w-px h-3 bg-sand-300"></div>
+    <div>Poll: <span class="font-mono font-medium text-clay-700" id="poll-interval">${(snapshot.polling.intervalMs / 1000).toFixed(0)}s</span></div>
+    <div class="w-px h-3 bg-sand-300"></div>
+    <div>Next: <span class="font-mono font-medium text-clay-700" id="poll-next">${(snapshot.polling.nextPollInMs / 1000).toFixed(1)}s</span></div>
+  </div>
+
+  <!-- Running agents -->
+  <section class="mb-10 animate-slide-up" style="animation-delay: 250ms">
+    <div class="flex items-center gap-3 mb-4">
+      <h2 class="font-display text-2xl text-clay-900">Running Agents</h2>
+      <span class="text-xs font-mono text-clay-400 bg-sand-200/60 px-2 py-0.5 rounded">${snapshot.running.length}</span>
+    </div>
+    <div class="bg-white/70 backdrop-blur-sm border border-sand-200 rounded-2xl overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-sand-200 bg-sand-50/50">
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">Identifier</th>
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">State</th>
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">Age</th>
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">Tokens</th>
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">Last Event</th>
+          </tr>
+        </thead>
+        <tbody id="running-tbody" class="font-mono text-sm">${runningRows}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Retry queue -->
+  <section class="mb-10 animate-slide-up" style="animation-delay: 350ms">
+    <div class="flex items-center gap-3 mb-4">
+      <h2 class="font-display text-2xl text-clay-900">Retry Queue</h2>
+      <span class="text-xs font-mono text-clay-400 bg-sand-200/60 px-2 py-0.5 rounded">${snapshot.retrying.length}</span>
+    </div>
+    <div class="bg-white/70 backdrop-blur-sm border border-sand-200 rounded-2xl overflow-hidden">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-sand-200 bg-sand-50/50">
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">Identifier</th>
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">Attempt</th>
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">Next Retry</th>
+            <th class="text-left py-3 px-4 text-[11px] font-semibold text-clay-400 uppercase tracking-widest">Last Error</th>
+          </tr>
+        </thead>
+        <tbody id="retry-tbody" class="font-mono text-sm">${retryRows}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Token usage grid -->
+  <section class="mb-10 animate-slide-up" style="animation-delay: 450ms">
+    <h2 class="font-display text-2xl text-clay-900 mb-4">Token Usage</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="token-grid">
+      <div class="bg-white/70 backdrop-blur-sm border border-sand-200 rounded-xl p-4 text-center transition-all hover:border-sand-300">
+        <div class="text-[10px] font-medium text-clay-400 uppercase tracking-widest mb-1">Input</div>
+        <div class="text-lg font-semibold text-clay-800 font-mono tabular-nums" id="tok-input">${fmt(totals.inputTokens)}</div>
+      </div>
+      <div class="bg-white/70 backdrop-blur-sm border border-sand-200 rounded-xl p-4 text-center transition-all hover:border-sand-300">
+        <div class="text-[10px] font-medium text-clay-400 uppercase tracking-widest mb-1">Output</div>
+        <div class="text-lg font-semibold text-clay-800 font-mono tabular-nums" id="tok-output">${fmt(totals.outputTokens)}</div>
+      </div>
+      <div class="bg-white/70 backdrop-blur-sm border border-sand-200 rounded-xl p-4 text-center transition-all hover:border-sand-300">
+        <div class="text-[10px] font-medium text-clay-400 uppercase tracking-widest mb-1">Total</div>
+        <div class="text-lg font-semibold text-clay-800 font-mono tabular-nums" id="tok-total">${fmt(totals.totalTokens)}</div>
+      </div>
+      <div class="bg-white/70 backdrop-blur-sm border border-sand-200 rounded-xl p-4 text-center transition-all hover:border-sand-300">
+        <div class="text-[10px] font-medium text-clay-400 uppercase tracking-widest mb-1">Cache Read</div>
+        <div class="text-lg font-semibold text-clay-800 font-mono tabular-nums" id="tok-cache-read">${fmt(cacheRead)}</div>
+      </div>
+      <div class="bg-white/70 backdrop-blur-sm border border-sand-200 rounded-xl p-4 text-center transition-all hover:border-sand-300">
+        <div class="text-[10px] font-medium text-clay-400 uppercase tracking-widest mb-1">Cache Create</div>
+        <div class="text-lg font-semibold text-clay-800 font-mono tabular-nums" id="tok-cache-create">${fmt(cacheCreation)}</div>
+      </div>
+      <div class="bg-white/70 backdrop-blur-sm border border-sand-200 rounded-xl p-4 text-center transition-all hover:border-sand-300">
+        <div class="text-[10px] font-medium text-clay-400 uppercase tracking-widest mb-1">Cost</div>
+        <div class="text-lg font-semibold text-sage-600 font-mono tabular-nums" id="tok-cost">$${costUsd.toFixed(4)}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="pt-8 border-t border-sand-200 text-center animate-fade-in" style="animation-delay: 550ms">
+    <p class="text-xs text-clay-400">
+      <span class="font-display italic text-clay-500">hatice</span>
+      <span class="mx-2 text-sand-300">&middot;</span>
+      autonomous agent orchestrator
+      <span class="mx-2 text-sand-300">&middot;</span>
+      powered by Claude Code Agent SDK
+    </p>
+  </footer>
+
+</div>
 
 <script>
 (function() {
@@ -240,29 +314,31 @@ export function renderLiveDashboard(snapshot: OrchestratorSnapshot): string {
     var sec = Math.floor(s % 60);
     return (h > 0 ? h + 'h ' : '') + m + 'm ' + sec + 's';
   }
-  function stateBadge(st) {
+  function stateBadgeClass(st) {
     var s = (st || '').toLowerCase();
-    if (s === 'error' || s === 'failed') return 'error';
-    if (s === 'waiting' || s === 'stalled') return 'warning';
-    if (s === 'done' || s === 'completed') return 'success';
-    return 'running';
+    if (s === 'error' || s === 'failed') return 'bg-rose-50 text-rose-600 border border-rose-200';
+    if (s === 'waiting' || s === 'stalled') return 'bg-amber-50 text-amber-600 border border-amber-200';
+    if (s === 'done' || s === 'completed') return 'bg-sage-50 text-sage-600 border border-sage-200';
+    return 'bg-ember-50 text-ember-600 border border-ember-200';
   }
-  function flash(el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+  function flash(el) {
+    if (!el) return;
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = 'flashRow 0.8s ease-out';
+  }
 
   function updateDashboard(snap) {
-    // Stats
     var el;
-    el = document.getElementById('stat-running'); if (el) { el.textContent = snap.running.length; flash(el.parentElement); }
-    el = document.getElementById('stat-retrying'); if (el) { el.textContent = snap.retrying.length; flash(el.parentElement); }
-    el = document.getElementById('stat-completed'); if (el) { el.textContent = snap.completed; flash(el.parentElement); }
-    el = document.getElementById('stat-tokens'); if (el) { el.textContent = fmt(snap.totals.totalTokens); flash(el.parentElement); }
+    el = document.getElementById('stat-running'); if (el) { el.textContent = snap.running.length; flash(el.closest('.group')); }
+    el = document.getElementById('stat-retrying'); if (el) { el.textContent = snap.retrying.length; flash(el.closest('.group')); }
+    el = document.getElementById('stat-completed'); if (el) { el.textContent = snap.completed; flash(el.closest('.group')); }
+    el = document.getElementById('stat-tokens'); if (el) { el.textContent = fmt(snap.totals.totalTokens); flash(el.closest('.group')); }
 
-    // Polling
     el = document.getElementById('poll-interval'); if (el) el.textContent = (snap.polling.intervalMs / 1000).toFixed(0) + 's';
     el = document.getElementById('poll-next'); if (el) el.textContent = (snap.polling.nextPollInMs / 1000).toFixed(1) + 's';
     el = document.getElementById('uptime'); if (el) el.textContent = formatUptime(snap.totals.secondsRunning);
 
-    // Token summary
     el = document.getElementById('tok-input'); if (el) el.textContent = fmt(snap.totals.inputTokens);
     el = document.getElementById('tok-output'); if (el) el.textContent = fmt(snap.totals.outputTokens);
     el = document.getElementById('tok-total'); if (el) el.textContent = fmt(snap.totals.totalTokens);
@@ -277,37 +353,35 @@ export function renderLiveDashboard(snapshot: OrchestratorSnapshot): string {
     el = document.getElementById('tok-cache-create'); if (el) el.textContent = fmt(cacheCreate);
     el = document.getElementById('tok-cost'); if (el) el.textContent = '$' + costUsd.toFixed(4);
 
-    // Running table
     var tbody = document.getElementById('running-tbody');
     if (tbody) {
       if (snap.running.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-row">No agents running</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-clay-400 italic text-sm">No agents running</td></tr>';
       } else {
         tbody.innerHTML = snap.running.map(function(r) {
-          return '<tr>' +
-            '<td class="cell-id">' + esc(r.identifier) + '</td>' +
-            '<td><span class="badge badge-' + stateBadge(r.state) + '">' + esc(r.state) + '</span></td>' +
-            '<td>' + r.runtimeSeconds.toFixed(0) + 's</td>' +
-            '<td>' + fmt(r.tokenUsage.totalTokens) + '</td>' +
-            '<td class="cell-event">' + esc(r.lastEvent || '-') + '</td>' +
+          return '<tr class="group border-b border-sand-200 last:border-0 transition-colors hover:bg-sand-50">' +
+            '<td class="py-3.5 px-4 font-semibold text-clay-900">' + esc(r.identifier) + '</td>' +
+            '<td class="py-3.5 px-4"><span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ' + stateBadgeClass(r.state) + '">' + esc(r.state) + '</span></td>' +
+            '<td class="py-3.5 px-4 tabular-nums text-clay-600">' + r.runtimeSeconds.toFixed(0) + 's</td>' +
+            '<td class="py-3.5 px-4 tabular-nums text-clay-600">' + fmt(r.tokenUsage.totalTokens) + '</td>' +
+            '<td class="py-3.5 px-4 text-clay-400 max-w-[280px] truncate text-sm">' + esc(r.lastEvent || '-') + '</td>' +
             '</tr>';
         }).join('');
       }
       flash(tbody);
     }
 
-    // Retry table
     var rtbody = document.getElementById('retry-tbody');
     if (rtbody) {
       if (snap.retrying.length === 0) {
-        rtbody.innerHTML = '<tr><td colspan="4" class="empty-row">No retries pending</td></tr>';
+        rtbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-clay-400 italic text-sm">No retries pending</td></tr>';
       } else {
         rtbody.innerHTML = snap.retrying.map(function(r) {
-          return '<tr>' +
-            '<td class="cell-id">' + esc(r.identifier) + '</td>' +
-            '<td>' + r.attempt + '</td>' +
-            '<td>' + (r.nextRetryInMs / 1000).toFixed(1) + 's</td>' +
-            '<td class="cell-error">' + esc(r.lastError || '-') + '</td>' +
+          return '<tr class="group border-b border-sand-200 last:border-0 transition-colors hover:bg-sand-50">' +
+            '<td class="py-3.5 px-4 font-semibold text-clay-900">' + esc(r.identifier) + '</td>' +
+            '<td class="py-3.5 px-4 tabular-nums text-clay-600">' + r.attempt + '</td>' +
+            '<td class="py-3.5 px-4 tabular-nums text-clay-600">' + (r.nextRetryInMs / 1000).toFixed(1) + 's</td>' +
+            '<td class="py-3.5 px-4 text-rose-600 max-w-[360px] truncate text-sm">' + esc(r.lastError || '-') + '</td>' +
             '</tr>';
         }).join('');
       }
@@ -321,19 +395,24 @@ export function renderLiveDashboard(snapshot: OrchestratorSnapshot): string {
     var es = new EventSource('/api/v1/events');
 
     es.onopen = function() {
-      if (badge) { badge.className = 'status-badge status-live'; badge.textContent = 'live'; }
+      if (badge) {
+        badge.className = 'inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase px-3.5 py-1.5 rounded-full bg-sage-50 text-sage-600 border border-sage-200';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-sage-500 animate-breathe"></span> live';
+      }
     };
 
     es.onerror = function() {
-      if (badge) { badge.className = 'status-badge status-offline'; badge.textContent = 'offline'; }
+      if (badge) {
+        badge.className = 'inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> offline';
+      }
     };
 
     es.onmessage = function(e) {
-      // Generic message handler — attempt JSON parse for state updates
       try {
         var data = JSON.parse(e.data);
         if (data && data.running !== undefined) { updateDashboard(data); }
-      } catch(ex) { /* not a state payload, ignore */ }
+      } catch(ex) {}
     };
 
     es.addEventListener('state:updated', function() {
@@ -341,13 +420,13 @@ export function renderLiveDashboard(snapshot: OrchestratorSnapshot): string {
         .then(function(r) { return r.json(); })
         .then(updateDashboard)
         .catch(function() {
-          if (badge) { badge.className = 'status-badge status-offline'; badge.textContent = 'offline'; }
+          if (badge) {
+            badge.className = 'inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200';
+            badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> offline';
+          }
         });
     });
-  }
-  // Fallback: noscript meta-refresh already handles no-JS case.
-  // For JS-enabled browsers without EventSource, poll every 5s.
-  else {
+  } else {
     setInterval(function() {
       fetch('/api/v1/state')
         .then(function(r) { return r.json(); })
@@ -376,13 +455,13 @@ function fmt(n: number): string {
   return n.toLocaleString();
 }
 
-/** Map agent state to CSS badge class suffix */
-function stateBadge(state: string): string {
+/** Map agent state to Tailwind badge classes */
+export function stateBadgeClass(state: string): string {
   const s = state.toLowerCase();
-  if (s === 'error' || s === 'failed') return 'error';
-  if (s === 'waiting' || s === 'stalled') return 'warning';
-  if (s === 'done' || s === 'completed') return 'success';
-  return 'running';
+  if (s === 'error' || s === 'failed') return 'bg-rose-50 text-rose-600 border border-rose-200';
+  if (s === 'waiting' || s === 'stalled') return 'bg-amber-50 text-amber-600 border border-amber-200';
+  if (s === 'done' || s === 'completed') return 'bg-emerald-50 text-emerald-600 border border-emerald-200';
+  return 'bg-ember-50 text-ember-600 border border-ember-200';
 }
 
 /** Format seconds into human-readable uptime */

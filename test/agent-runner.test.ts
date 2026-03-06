@@ -145,31 +145,19 @@ describe('AgentRunner', () => {
     expect(callArgs.prompt).toBe('Fix issue MT-42: Fix the login bug');
   });
 
-  it('run: uses continuation prompt for turn 2+', async () => {
-    // First turn: not complete (no result message, just init)
-    const turn1Messages = [
-      { type: 'system', subtype: 'init', session_id: 'test-session-123' },
-    ];
-    // Second turn: complete
-    const turn2Messages = makeSuccessMessages();
-
-    mockQuery
-      .mockReturnValueOnce(asyncGen(turn1Messages))
-      .mockReturnValueOnce(asyncGen(turn2Messages));
+  it('run: passes maxTurns to SDK query and calls once', async () => {
+    mockQuery.mockReturnValueOnce(asyncGen(makeSuccessMessages()));
 
     const { AgentRunner } = await import('../src/agent-runner.js');
-    const runner = new AgentRunner(makeOptions({ maxTurns: 3 }));
+    const runner = new AgentRunner(makeOptions({ maxTurns: 10 }));
     await runner.run();
 
-    expect(mockQuery).toHaveBeenCalledTimes(2);
+    // SDK handles all turns internally — single query call
+    expect(mockQuery).toHaveBeenCalledTimes(1);
 
-    // First call should use the rendered template
-    const firstCallPrompt = mockQuery.mock.calls[0][0].prompt;
-    expect(firstCallPrompt).toBe('Fix issue MT-42: Fix the login bug');
-
-    // Second call should use continuation prompt
-    const secondCallPrompt = mockQuery.mock.calls[1][0].prompt;
-    expect(secondCallPrompt).toContain('continuation turn 2 of 3');
+    // Verify maxTurns passed to SDK
+    const queryOptions = mockQuery.mock.calls[0][0].options;
+    expect(queryOptions.maxTurns).toBe(10);
   });
 
   it('run: collects token usage from result message', async () => {
@@ -210,7 +198,7 @@ describe('AgentRunner', () => {
     expect(result.kind).toBe('error');
     if (result.kind === 'error') {
       expect(result.issueId).toBe('issue-1');
-      expect(result.error.message).toBe('SDK connection failed');
+      expect(result.error.message).toContain('SDK connection failed');
       expect(result.attempt).toBe(1);
       expect(result.durationMs).toBeGreaterThanOrEqual(0);
     }

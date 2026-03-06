@@ -320,16 +320,39 @@ export class Orchestrator extends EventEmitter<haticeEvents> {
           // Config requests continuation retry after normal completion
           this.scheduleRetry(entry, entry.attempt + 1, 1000, null);
         } else {
-          // Agent finished successfully — mark completed, don't retry
+          // Agent finished successfully — mark completed
           this.state.markCompleted(issueId);
           this.state.unclaim(issueId);
           this.emitStateUpdated();
-          // Cleanup workspace
+
+          // Update tracker: post comment + move to Done
           try {
-            await this.workspace.removeWorkspace(entry.identifier, issueId);
+            const usage = result.usage;
+            const comment = [
+              `**hatice** completed this issue.`,
+              `- Turns: ${result.turnsCompleted}`,
+              `- Duration: ${((result.durationMs ?? 0) / 1000).toFixed(1)}s`,
+              ...(usage ? [
+                `- Tokens: ${usage.totalTokens} (in: ${usage.inputTokens}, out: ${usage.outputTokens})`,
+                `- Cost: $${usage.costUsd.toFixed(4)}`,
+              ] : []),
+            ].join('\n');
+            await this.tracker.createComment(issueId, comment);
+            this.log.info({ issueId }, 'Posted completion comment to tracker');
           } catch (e) {
-            this.log.warn({ err: e, issueId }, 'Failed to cleanup workspace after completion');
+            this.log.warn({ err: e, issueId }, 'Failed to post completion comment');
           }
+
+          try {
+            await this.tracker.updateIssueState(issueId, 'Done');
+            this.log.info({ issueId }, 'Updated issue state to Done');
+          } catch (e) {
+            this.log.warn({ err: e, issueId }, 'Failed to update issue state to Done');
+          }
+
+          // Keep workspace after completion so code changes are preserved
+          // Workspace can be manually cleaned up or by startup cleanup on next run
+          this.log.info({ issueId, identifier: entry.identifier }, 'Workspace preserved after completion');
         }
         break;
 

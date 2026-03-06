@@ -7,6 +7,7 @@ import { SSEBroadcaster } from './sse-broadcaster.js';
 import { withTimeout, TimeoutError } from './snapshot-timeout.js';
 import type { EventBus } from './event-bus.js';
 import type { OrchestratorSnapshot, SnapshotRunningEntry, SnapshotRetryEntry, haticeEvents } from './types.js';
+import { renderLiveDashboard } from './dashboard-template.js';
 
 export class HttpServer {
   private app: Hono;
@@ -40,10 +41,10 @@ export class HttpServer {
   }
 
   private setupRoutes(): void {
-    // HTML dashboard
+    // HTML dashboard — uses Tailwind-based live template
     this.app.get('/', (c) => {
       const snapshot = this.orchestrator.getState().snapshot();
-      return c.html(this.renderDashboard(snapshot));
+      return c.html(renderLiveDashboard(snapshot));
     });
 
     // SSE endpoint — real-time events
@@ -126,42 +127,6 @@ export class HttpServer {
       await this.orchestrator.refresh();
       return c.json({ ok: true });
     });
-  }
-
-  private renderDashboard(snapshot: OrchestratorSnapshot): string {
-    const running = snapshot.running.map((r) =>
-      `<tr><td>${r.identifier}</td><td>${r.state}</td><td>${r.runtimeSeconds.toFixed(0)}s</td><td>${r.tokenUsage.totalTokens}</td><td>${r.lastEvent ?? '-'}</td></tr>`
-    ).join('');
-
-    const retrying = snapshot.retrying.map((r) =>
-      `<tr><td>${r.identifier}</td><td>${r.attempt}</td><td>${(r.nextRetryInMs / 1000).toFixed(0)}s</td><td>${r.lastError ?? '-'}</td></tr>`
-    ).join('');
-
-    return `<!DOCTYPE html>
-<html><head><title>hatice Dashboard</title>
-<meta http-equiv="refresh" content="5">
-<style>
-  body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
-  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #333; }
-  th { color: #8be9fd; }
-  h1 { color: #ff79c6; }
-  h2 { color: #50fa7b; }
-  .stat { display: inline-block; margin: 0 20px; }
-  .stat-value { font-size: 24px; color: #f1fa8c; }
-</style></head><body>
-<h1>hatice</h1>
-<div>
-  <span class="stat"><span class="stat-value">${snapshot.running.length}</span> running</span>
-  <span class="stat"><span class="stat-value">${snapshot.retrying.length}</span> retrying</span>
-  <span class="stat"><span class="stat-value">${snapshot.completed}</span> completed</span>
-  <span class="stat"><span class="stat-value">${snapshot.totals.totalTokens}</span> total tokens</span>
-</div>
-<h2>Running Agents</h2>
-<table><tr><th>Issue</th><th>State</th><th>Age</th><th>Tokens</th><th>Last Event</th></tr>${running || '<tr><td colspan="5">No agents running</td></tr>'}</table>
-<h2>Retry Queue</h2>
-<table><tr><th>Issue</th><th>Attempt</th><th>Next Retry</th><th>Error</th></tr>${retrying || '<tr><td colspan="4">No retries pending</td></tr>'}</table>
-</body></html>`;
   }
 
   getApp(): Hono {

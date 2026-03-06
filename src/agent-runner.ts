@@ -53,58 +53,46 @@ export class AgentRunner {
     }
 
     try {
-      for (let turn = 1; turn <= maxTurns; turn++) {
-        if (abortController.signal.aborted) {
-          return { kind: 'cancelled', issueId: issue.id, reason: 'Aborted by controller' };
+      if (abortController.signal.aborted) {
+        return { kind: 'cancelled', issueId: issue.id, reason: 'Aborted by controller' };
+      }
+
+      // Integration: Rate Limiter — check before execution
+      if (this.options.rateLimiter) {
+        if (this.options.rateLimiter.isLimited('claude-api')) {
+          const info = this.options.rateLimiter.getInfo('claude-api');
+          const waitMs = info.retryAfterMs ?? 5000;
+          this.sessionLog?.info({ waitMs }, 'Rate limited, waiting before execution');
+          await delay(waitMs, abortController.signal);
         }
+      }
 
-        // Integration: Rate Limiter — check before each turn
-        if (this.options.rateLimiter) {
-          if (this.options.rateLimiter.isLimited('claude-api')) {
-            const info = this.options.rateLimiter.getInfo('claude-api');
-            const waitMs = info.retryAfterMs ?? 5000;
-            this.sessionLog?.info({ waitMs }, 'Rate limited, waiting before next turn');
-            await delay(waitMs, abortController.signal);
-          }
-        }
+      const prompt = await this.buildPrompt(1, maxTurns);
 
-        const prompt = await this.buildPrompt(turn, maxTurns);
+      // SDK handles all turns internally via maxTurns
+      const { claudeConfig } = this.options;
+      const turnResult = await TurnTimeout.withTimeout(
+        async (_signal) => this.executeTurn(prompt, 1),
+        claudeConfig.turnTimeoutMs,
+        abortController.signal,
+      );
 
-        // Integration: Turn Timeout — wrap executeTurn with timeout
-        const { claudeConfig } = this.options;
-        const turnResult = await TurnTimeout.withTimeout(
-          async (_signal) => this.executeTurn(prompt, turn),
-          claudeConfig.turnTimeoutMs,
-          abortController.signal,
-        );
+      turnsCompleted = 1;
 
-        turnsCompleted++;
+      // Integration: Rate Limiter — record successful request
+      if (this.options.rateLimiter) {
+        this.options.rateLimiter.recordSuccess('claude-api');
+      }
 
-        // Integration: Rate Limiter — record successful request
-        if (this.options.rateLimiter) {
-          this.options.rateLimiter.recordSuccess('claude-api');
-        }
+      // Aggregate usage
+      if (turnResult.usage) {
+        totalUsage = mergeUsage(totalUsage, turnResult.usage);
+        this.options.onTokenUsage?.(issue.id, totalUsage);
+      }
 
-        // Aggregate usage
-        if (turnResult.usage) {
-          totalUsage = mergeUsage(totalUsage, turnResult.usage);
-          this.options.onTokenUsage?.(issue.id, totalUsage);
-        }
-
-        if (turnResult.sessionId) {
-          this.sessionId = turnResult.sessionId;
-          this.options.onSessionId?.(issue.id, turnResult.sessionId);
-        }
-
-        // Check if we should continue
-        if (turnResult.isComplete || turn === maxTurns) {
-          break;
-        }
-
-        // Continuation delay
-        if (turn < maxTurns) {
-          await delay(1000, abortController.signal);
-        }
+      if (turnResult.sessionId) {
+        this.sessionId = turnResult.sessionId;
+        this.options.onSessionId?.(issue.id, turnResult.sessionId);
       }
 
       return {
@@ -146,18 +134,39 @@ export class AgentRunner {
   }
 
   private async executeTurn(prompt: string, turn: number): Promise<TurnResult> {
-    // Dynamic import to avoid issues with mocking in tests
-    const { query, createSdkMcpServer, tool } = await import('@anthropic-ai/claude-agent-sdk');
-    const { z } = await import('zod');
+    // Dry-run mode: simulate agent execution without spawning Claude
+    if (this.options.claudeConfig.dryRun) {
+      return this.simulateTurn(prompt, turn);
+    }
+
+    let sdkModule: any;
+    let zod: any;
+
+    try {
+      // Dynamic import to avoid issues with mocking in tests
+      sdkModule = await import('@anthropic-ai/claude-agent-sdk');
+      zod = await import('zod');
+    } catch (importErr: any) {
+      throw new AgentError(`Failed to import Claude Agent SDK: ${importErr.message}`);
+    }
+
+    const { query, createSdkMcpServer, tool } = sdkModule;
+    const { z } = zod;
 
     const mcpServers = this.buildMcpServers(createSdkMcpServer, tool, z);
     const { claudeConfig, workspacePath, abortController } = this.options;
 
+    // Strip CLAUDECODE env var to allow spawning Claude from within a Claude session
+    const cleanEnv = { ...process.env };
+    delete cleanEnv.CLAUDECODE;
+
     const queryOptions: Record<string, unknown> = {
       cwd: workspacePath,
-      maxTurns: 1,
+      ...(this.options.maxTurns > 0 && { maxTurns: this.options.maxTurns }),
       abortController,
       permissionMode: claudeConfig.permissionMode,
+      ...(claudeConfig.permissionMode === 'bypassPermissions' && { allowDangerouslySkipPermissions: true }),
+      env: cleanEnv,
       ...(claudeConfig.model && { model: claudeConfig.model }),
       ...(claudeConfig.allowedTools && { allowedTools: claudeConfig.allowedTools }),
       ...(claudeConfig.disallowedTools && { disallowedTools: claudeConfig.disallowedTools }),
@@ -178,58 +187,95 @@ export class AgentRunner {
       sessionId: null,
     };
 
-    const q = query({ prompt, options: queryOptions as any });
+    let q: any;
+    try {
+      q = query({ prompt, options: queryOptions as any });
+    } catch (spawnErr: any) {
+      throw new AgentError(`Failed to start Claude agent query: ${spawnErr.message}`);
+    }
 
-    for await (const msg of q) {
-      // Track events
-      if ('type' in msg) {
-        this.options.onEvent?.(this.options.issue.id, msg.type, JSON.stringify(msg).slice(0, 200));
+    try {
+      for await (const msg of q) {
+        // Track events
+        if ('type' in msg) {
+          this.options.onEvent?.(this.options.issue.id, msg.type, JSON.stringify(msg).slice(0, 200));
 
-        // Integration: Session Logger — log agent events
-        this.sessionLog?.info({ type: msg.type, turn }, 'Agent event');
-      }
+          // Integration: Session Logger — log agent events
+          this.sessionLog?.info({ type: msg.type, turn }, 'Agent event');
+        }
 
-      // Capture session ID from init
-      if (msg.type === 'system' && 'subtype' in msg && msg.subtype === 'init' && 'session_id' in msg) {
-        result.sessionId = msg.session_id as string;
-      }
+        // Capture session ID from init
+        if (msg.type === 'system' && 'subtype' in msg && msg.subtype === 'init' && 'session_id' in msg) {
+          result.sessionId = msg.session_id as string;
+        }
 
-      // Integration: Input Handler — auto-respond to input requests
-      if ((msg as any).type === 'input_request' && this.inputHandler?.shouldAutoRespond()) {
-        const requestId = (msg as any).request_id;
-        const response = this.inputHandler.getAutoResponse();
-        if (requestId && typeof (q as any).respondToInputRequest === 'function') {
-          (q as any).respondToInputRequest(requestId, response);
+        // Integration: Input Handler — auto-respond to input requests
+        if ((msg as any).type === 'input_request' && this.inputHandler?.shouldAutoRespond()) {
+          const requestId = (msg as any).request_id;
+          const response = this.inputHandler.getAutoResponse();
+          if (requestId && typeof (q as any).respondToInputRequest === 'function') {
+            (q as any).respondToInputRequest(requestId, response);
+          }
+        }
+
+        // Integration: Rate Limiter — detect rate limit events
+        if (this.options.rateLimiter) {
+          if ((msg as any).type === 'error' && 'status' in msg && (msg as any).status === 429) {
+            const retryAfterMs = (msg as any).retry_after_ms ?? 60_000;
+            this.options.rateLimiter.recordLimit('claude-api', retryAfterMs);
+            this.sessionLog?.info({ retryAfterMs }, 'Rate limit detected');
+          }
+        }
+
+        // Capture result
+        if (msg.type === 'result') {
+          result.isComplete = true;
+          this.sessionLog?.info({
+            stopReason: (msg as any).stop_reason,
+            numTurns: (msg as any).num_turns,
+          }, 'Agent result');
+          if ('usage' in msg && msg.usage) {
+            const u = msg.usage as any;
+            result.usage = {
+              inputTokens: u.input_tokens ?? 0,
+              outputTokens: u.output_tokens ?? 0,
+              totalTokens: (u.input_tokens ?? 0) + (u.output_tokens ?? 0),
+              cacheReadInputTokens: u.cache_read_input_tokens ?? 0,
+              cacheCreationInputTokens: u.cache_creation_input_tokens ?? 0,
+              costUsd: (msg as any).total_cost_usd ?? 0,
+            };
+          }
         }
       }
-
-      // Integration: Rate Limiter — detect rate limit events
-      if (this.options.rateLimiter) {
-        if ((msg as any).type === 'error' && 'status' in msg && (msg as any).status === 429) {
-          const retryAfterMs = (msg as any).retry_after_ms ?? 60_000;
-          this.options.rateLimiter.recordLimit('claude-api', retryAfterMs);
-          this.sessionLog?.info({ retryAfterMs }, 'Rate limit detected');
-        }
-      }
-
-      // Capture result
-      if (msg.type === 'result') {
-        result.isComplete = true;
-        if ('usage' in msg && msg.usage) {
-          const u = msg.usage as any;
-          result.usage = {
-            inputTokens: u.input_tokens ?? 0,
-            outputTokens: u.output_tokens ?? 0,
-            totalTokens: (u.input_tokens ?? 0) + (u.output_tokens ?? 0),
-            cacheReadInputTokens: u.cache_read_input_tokens ?? 0,
-            cacheCreationInputTokens: u.cache_creation_input_tokens ?? 0,
-            costUsd: (msg as any).total_cost_usd ?? 0,
-          };
-        }
-      }
+    } catch (streamErr: any) {
+      throw new AgentError(`Agent stream error: ${streamErr.message}`);
     }
 
     return result;
+  }
+
+  /** Simulate a turn for demo/dry-run mode without spawning real agents */
+  private async simulateTurn(_prompt: string, turn: number): Promise<TurnResult> {
+    // Simulate processing time (1-3 seconds)
+    const simulatedDelayMs = 1000 + Math.random() * 2000;
+    await delay(simulatedDelayMs, this.options.abortController.signal);
+
+    this.options.onEvent?.(this.options.issue.id, 'system', JSON.stringify({ type: 'system', subtype: 'init', dry_run: true }));
+    this.sessionLog?.info({ turn, dryRun: true }, 'Simulated agent turn');
+
+    const simulatedTokens = Math.floor(500 + Math.random() * 2000);
+    return {
+      isComplete: turn >= this.options.maxTurns || Math.random() > 0.5,
+      usage: {
+        inputTokens: simulatedTokens,
+        outputTokens: Math.floor(simulatedTokens * 0.3),
+        totalTokens: Math.floor(simulatedTokens * 1.3),
+        cacheReadInputTokens: Math.floor(simulatedTokens * 0.1),
+        cacheCreationInputTokens: Math.floor(simulatedTokens * 0.05),
+        costUsd: simulatedTokens * 0.000003,
+      },
+      sessionId: this.sessionId ?? `dry-run-${Date.now()}`,
+    };
   }
 
   private buildMcpServers(

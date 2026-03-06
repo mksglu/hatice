@@ -126,6 +126,7 @@ export interface ClaudeConfig {
   canUseTool: Record<string, boolean> | null;
   claudeCodePath: string | null;
   autoRespondToInput: boolean;
+  dryRun: boolean;
 }
 
 export interface ServerConfig {

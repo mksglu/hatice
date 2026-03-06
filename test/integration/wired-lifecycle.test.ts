@@ -357,8 +357,8 @@ describe('wired-lifecycle integration', () => {
     expect(completedEvents.length).toBe(1);
     expect(completedEvents[0]!.args[0]).toBe('lifecycle-1');
 
-    // Verify workspace cleanup was triggered on normal completion
-    expect(removeWorkspaceFn).toHaveBeenCalledWith('TEST-lifecycle-1', 'lifecycle-1');
+    // Workspace is preserved after normal completion (not cleaned up)
+    expect(removeWorkspaceFn).not.toHaveBeenCalled();
   });
 
   // -----------------------------------------------------------------------

@@ -54,6 +54,7 @@ const claudeSchema = z.object({
   canUseTool: z.record(z.string(), z.boolean()).nullable().default(null),
   claudeCodePath: z.string().nullable().default(null),
   autoRespondToInput: z.boolean().default(true),
+  dryRun: z.boolean().default(false),
 });
 
 const serverSchema = z.object({
@@ -90,6 +91,7 @@ const haticeConfigSchema = z.object({
     canUseTool: null,
     claudeCodePath: null,
     autoRespondToInput: true,
+    dryRun: false,
   }),
   server: serverSchema.default({ port: null, host: '127.0.0.1' }),
 });

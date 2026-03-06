@@ -15,6 +15,15 @@ import { createLogger } from '../src/logger.js';
 import type { Tracker, Issue } from '../src/types.js';
 
 const logger = createLogger({ component: 'cli' });
+
+// Prevent unhandled rejections from crashing the process
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err }, 'Uncaught exception');
+});
+process.on('unhandledRejection', (reason) => {
+  logger.error({ reason }, 'Unhandled promise rejection');
+});
+
 const program = new Command();
 
 program
@@ -54,6 +63,8 @@ program
         tracker = new GitHubAdapter(config.tracker);
         break;
       case 'memory': {
+        // Enable dry-run mode for memory tracker (demo mode — no real agents)
+        config.claude.dryRun = true;
         const demoIssues: Issue[] = [
           {
             id: 'demo-1', identifier: 'DEMO-1', title: 'Fix login button not responding',
@@ -107,7 +118,8 @@ program
     // Start HTTP server if port configured
     let httpServer: HttpServer | null = null;
     if (port) {
-      httpServer = new HttpServer(orchestrator, port, config.server.host);
+      const eventBus = orchestrator.getEventBus();
+      httpServer = new HttpServer(orchestrator, port, config.server.host, eventBus);
       await httpServer.start();
     }
 

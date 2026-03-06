@@ -181,7 +181,7 @@ export class LinearClient {
     do {
       const variables: Record<string, unknown> = {
         filter: {
-          project: { slugs: [this.projectSlug] },
+          team: { key: { eq: this.projectSlug } },
           state: { name: { in: states } },
         },
         first: ISSUE_PAGE_SIZE,

@@ -2,14 +2,16 @@
 tracker:
   kind: linear
   apiKey: $LINEAR_API_KEY
-  projectSlug: "MKS"
+  projectSlug: "TEAM"
   activeStates: ["Todo", "In Progress"]
   terminalStates: ["Done", "Canceled", "Duplicate"]
   assignee: "me"
 workspace:
   rootDir: /tmp/hatice-workspaces
 hooks:
-  afterCreate: "git clone https://github.com/mksglu/hatice.git . && npm install"
+  afterCreate: "git clone https://github.com/your-org/your-repo.git . && npm install"
+polling:
+  intervalMs: 30000
 agent:
   maxConcurrentAgents: 3
   maxTurns: 0
@@ -19,7 +21,7 @@ claude:
 server:
   port: 4000
 ---
-You are an expert software engineer working on the **hatice** project — an autonomous agent orchestration system.
+You are an expert software engineer working on the project.
 
 Solve the following issue:
 
@@ -31,6 +33,6 @@ Solve the following issue:
 - Work in the provided workspace directory
 - Write tests first (TDD), then implement
 - Follow existing code patterns and conventions
-- Run `npx vitest run` to verify tests pass
-- Run `npx tsc --noEmit` to verify types
+- Run tests to verify your changes pass
+- Run type checks to verify types
 - Commit your changes when done with a descriptive message
