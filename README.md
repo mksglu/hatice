@@ -10,6 +10,8 @@ Hatice polls your issue tracker, spins up isolated workspaces, and dispatches Cl
 >
 > OpenAI demonstrated this with Codex. Hatice is the working, open-source implementation of the same philosophy — powered by **Claude Code Agent SDK**.
 
+https://github.com/user-attachments/assets/3232c476-c573-4311-b6d4-3941578b0ce3
+
 ---
 
 ## The Manifesto
@@ -73,12 +75,6 @@ Hatice was inspired by the architectural patterns demonstrated in [Symphony](htt
 - **Fine-grained tool control** — Allow/disallow specific tools, custom `canUseTool` callbacks.
 - **MCP server tools** — Agents can query Linear and GitHub APIs directly via MCP.
 - **Built-in TDD** — `.claude/CLAUDE.md` enforces test-driven development for all contributions.
-
----
-
-## Demo
-
-https://github.com/user-attachments/assets/3232c476-c573-4311-b6d4-3941578b0ce3
 
 ---
 
