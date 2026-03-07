@@ -16,6 +16,8 @@ export { LinearClient } from './linear/client.js';
 export { LinearAdapter } from './linear/adapter.js';
 export { GitHubClient } from './github/client.js';
 export { GitHubAdapter } from './github/adapter.js';
+export { GitLabClient } from './gitlab/client.js';
+export { GitLabAdapter } from './gitlab/adapter.js';
 
 // New modules
 export { Supervisor } from './supervisor.js';

@@ -8,6 +8,7 @@ import { HttpServer } from '../src/http-server.js';
 import { StatusDashboard } from '../src/status-dashboard.js';
 import { LinearAdapter } from '../src/linear/adapter.js';
 import { GitHubAdapter } from '../src/github/adapter.js';
+import { GitLabAdapter } from '../src/gitlab/adapter.js';
 import { MemoryTracker } from '../src/tracker.js';
 import { Supervisor } from '../src/supervisor.js';
 import { StartupCleanup } from '../src/cleanup.js';
@@ -61,6 +62,9 @@ program
         break;
       case 'github':
         tracker = new GitHubAdapter(config.tracker);
+        break;
+      case 'gitlab':
+        tracker = new GitLabAdapter(config.tracker);
         break;
       case 'memory': {
         // Enable dry-run mode for memory tracker (demo mode — no real agents)
