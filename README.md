@@ -30,7 +30,7 @@ This is not a wrapper or a toy. This is a production-grade orchestration system 
 
 ## Symphony vs Hatice
 
-Hatice was inspired by the architectural patterns demonstrated in [Symphony](https://github.com/openai/codex/tree/main/codex-symphony), OpenAI's Elixir/OTP orchestration system for Codex agents. We reimagined every component from scratch in TypeScript, replacing Codex with Claude Code Agent SDK and adding capabilities that go beyond the original.
+Hatice was inspired by the architectural patterns demonstrated in [Symphony](https://github.com/openai/symphony), OpenAI's Elixir/OTP orchestration system for Codex agents. We reimagined every component from scratch in TypeScript, replacing Codex with Claude Code Agent SDK and adding capabilities that go beyond the original.
 
 **No code was copied. No license was violated.** We adopted the manifesto, studied the architecture, and built something new.
 
@@ -73,6 +73,12 @@ Hatice was inspired by the architectural patterns demonstrated in [Symphony](htt
 - **Fine-grained tool control** — Allow/disallow specific tools, custom `canUseTool` callbacks.
 - **MCP server tools** — Agents can query Linear and GitHub APIs directly via MCP.
 - **Built-in TDD** — `.claude/CLAUDE.md` enforces test-driven development for all contributions.
+
+---
+
+## Demo
+
+https://github.com/user-attachments/assets/3232c476-c573-4311-b6d4-3941578b0ce3
 
 ---
 
@@ -315,7 +321,7 @@ orchestrator.start();
 
 ## Acknowledgments
 
-This project was inspired by the **Harness Engineering** philosophy articulated by [Ryan Lopopolo at OpenAI](https://openai.com/index/harness-engineering/) and the architectural patterns demonstrated in [Symphony](https://github.com/openai/codex/tree/main/codex-symphony) (Elixir/OTP).
+This project was inspired by the **Harness Engineering** philosophy articulated by [Ryan Lopopolo at OpenAI](https://openai.com/index/harness-engineering/) and the architectural patterns demonstrated in [Symphony](https://github.com/openai/symphony) (Elixir/OTP).
 
 We believe in the agent-first future. Hatice is our contribution to making it real with Claude Code.
 
