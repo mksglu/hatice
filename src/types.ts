@@ -82,7 +82,7 @@ export interface haticeConfig {
 }
 
 export interface TrackerConfig {
-  kind: 'linear' | 'github' | 'memory';
+  kind: 'linear' | 'github' | 'gitlab' | 'memory';
   endpoint: string;
   apiKey: string;
   projectSlug: string;
