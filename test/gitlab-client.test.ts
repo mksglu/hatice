@@ -31,10 +31,10 @@ describe('GitLabClient', () => {
 
       const issues = await client.fetchIssues(['Open']);
 
-      expect(issues).toHaveLength(2);
-      expect(issues[0].id).toBe('101');
+      expect(issues).toHaveLength(5);
+      expect(issues[0].id).toBe('group/project#1');
       expect(issues[0].title).toBe('Fix CI pipeline');
-      expect(issues[1].id).toBe('102');
+      expect(issues[1].id).toBe('group/project#2');
       expect(issues[1].title).toBe('Add feature X');
     });
 
@@ -71,6 +71,38 @@ describe('GitLabClient', () => {
       const issues = await client.fetchIssues(['Open']);
 
       expect(issues[0].state).toBe('Open');
+    });
+
+    it('extracts priority from label for regular issues', async () => {
+      globalThis.fetch = mockFetchResponse(issuesFixture);
+
+      const issues = await client.fetchIssues(['Open']);
+
+      // Issue 101 has label "Priority::High" → lowercased "priority::high" → maps to 1
+      expect(issues[0].priority).toBe(1);
+      // Issue 102 has no priority label and no severity → null
+      expect(issues[1].priority).toBeNull();
+    });
+
+    it('maps incident severity to priority number', async () => {
+      globalThis.fetch = mockFetchResponse(issuesFixture);
+
+      const issues = await client.fetchIssues(['Open']);
+
+      // Issue 103: incident with CRITICAL severity, no label → 0 (same as priority::urgent)
+      expect(issues[2].priority).toBe(0);
+      // Issue 104: incident with LOW severity, no label → 3 (same as priority::low)
+      expect(issues[3].priority).toBe(3);
+    });
+
+    it('prefers label over severity when both present', async () => {
+      globalThis.fetch = mockFetchResponse(issuesFixture);
+
+      const issues = await client.fetchIssues(['Open']);
+
+      // Issue 105: incident, severity HIGH (→1), but has label Priority::Urgent (→0)
+      // Label should win: priority = 0
+      expect(issues[4].priority).toBe(0);
     });
 
     it('sends correct API request with query params', async () => {
@@ -173,4 +205,5 @@ describe('GitLabClient', () => {
       expect(JSON.parse(options.body)).toEqual({ state_event: 'reopen' });
     });
   });
+
 });

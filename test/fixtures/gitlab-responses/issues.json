@@ -10,7 +10,9 @@
     "updated_at": "2026-01-02T00:00:00Z",
     "labels": ["bug", "Priority::High"],
     "assignees": [{ "id": 10, "username": "dev1" }],
-    "references": { "full": "group/project#1" }
+    "references": { "full": "group/project#1" },
+    "severity": "UNKNOWN",
+    "issue_type": "issue"
   },
   {
     "id": 102,
@@ -23,6 +25,53 @@
     "updated_at": "2026-01-04T00:00:00Z",
     "labels": ["enhancement"],
     "assignees": [],
-    "references": { "full": "group/project#2" }
+    "references": { "full": "group/project#2" },
+    "severity": "UNKNOWN",
+    "issue_type": "issue"
+  },
+  {
+    "id": 103,
+    "iid": 3,
+    "title": "Production database outage",
+    "description": "Database connection pool exhausted",
+    "state": "opened",
+    "web_url": "https://gitlab.local/group/project/-/issues/3",
+    "created_at": "2026-01-05T00:00:00Z",
+    "updated_at": "2026-01-05T01:00:00Z",
+    "labels": ["incident"],
+    "assignees": [{ "id": 10, "username": "dev1" }],
+    "references": { "full": "group/project#3" },
+    "severity": "CRITICAL",
+    "issue_type": "incident"
+  },
+  {
+    "id": 104,
+    "iid": 4,
+    "title": "Slow API response times",
+    "description": "P95 latency above threshold",
+    "state": "opened",
+    "web_url": "https://gitlab.local/group/project/-/issues/4",
+    "created_at": "2026-01-06T00:00:00Z",
+    "updated_at": "2026-01-06T01:00:00Z",
+    "labels": ["incident"],
+    "assignees": [{ "id": 10, "username": "dev1" }],
+    "references": { "full": "group/project#4" },
+    "severity": "LOW",
+    "issue_type": "incident"
+  },
+  {
+    "id": 105,
+    "iid": 5,
+    "title": "Auth service degraded",
+    "description": "Intermittent 503 errors on login",
+    "state": "opened",
+    "web_url": "https://gitlab.local/group/project/-/issues/5",
+    "created_at": "2026-01-07T00:00:00Z",
+    "updated_at": "2026-01-07T01:00:00Z",
+    "labels": ["incident", "Priority::Urgent"],
+    "assignees": [{ "id": 10, "username": "dev1" }],
+    "references": { "full": "group/project#5" },
+    "severity": "HIGH",
+    "issue_type": "incident"
   }
 ]

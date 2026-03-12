@@ -13,9 +13,18 @@ interface GitLabIssue {
   labels: string[];
   assignees: Array<{ id: number; username: string }>;
   references: { full: string };
+  severity: string;
+  issue_type: string;
 }
 
 const PAGE_SIZE = 100;
+
+const SEVERITY_MAP: Record<string, number> = {
+  'critical': 0,
+  'high': 1,
+  'medium': 2,
+  'low': 3,
+};
 
 const PRIORITY_MAP: Record<string, number> = {
   'priority::urgent': 0,
@@ -71,10 +80,18 @@ export class GitLabClient {
     const labels = issue.labels.map((l) => l.toLowerCase());
 
     let priority: number | null = null;
+
     for (const label of labels) {
       if (label in PRIORITY_MAP) {
         priority = PRIORITY_MAP[label];
         break;
+      }
+    }
+
+    if (priority === null) {
+      const sev = issue.severity?.toLowerCase();
+      if (sev && sev !== 'unknown' && sev in SEVERITY_MAP) {
+        priority = SEVERITY_MAP[sev];
       }
     }
 
@@ -89,7 +106,7 @@ export class GitLabClient {
       : null;
 
     return {
-      id: String(issue.id),
+      id: identifier,
       identifier,
       title: issue.title,
       description: issue.description,

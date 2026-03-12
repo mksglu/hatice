@@ -165,8 +165,8 @@ export class Orchestrator extends EventEmitter<haticeEvents> {
 
     // Sort: priority DESC (1 is highest), createdAt ASC, identifier ASC
     eligible.sort((a, b) => {
-      const pa = a.priority ?? 5; // null priority = lowest
-      const pb = b.priority ?? 5;
+      const pa = a.priority ?? 99; // null priority = lowest
+      const pb = b.priority ?? 99;
       if (pa !== pb) return pa - pb; // Lower number = higher priority
 
       const ca = a.createdAt;
