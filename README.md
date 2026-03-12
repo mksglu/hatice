@@ -48,7 +48,7 @@ Hatice was inspired by the architectural patterns demonstrated in [Symphony](htt
 | **Process Supervision** | OTP Supervisor (native) | Custom Supervisor class |
 | **PubSub** | Phoenix.PubSub | Typed EventBus with wildcard |
 | **Real-time Dashboard** | Phoenix LiveView | SSE + vanilla JS |
-| **Issue Tracker** | Linear only | Linear + GitHub Issues |
+| **Issue Tracker** | Linear only | Linear + GitHub Issues + GitLab |
 | **Test Framework** | ExUnit (~17 files) | Vitest (30 files, 328 tests) |
 | **Model Selection** | Fixed (Codex) | Configurable (`claude.model`) |
 | **Cost Tracking** | Not available | Per-session USD tracking |
@@ -68,6 +68,7 @@ Hatice was inspired by the architectural patterns demonstrated in [Symphony](htt
 ### What Hatice adds beyond Symphony
 
 - **GitHub Issues support** — Not just Linear. Full REST + GraphQL adapter with `owner/repo` format.
+- **GitLab support** — Full REST adapter for GitLab CE/EE. Supports incident severity-to-priority mapping and self-hosted instances.
 - **Claude Code Agent SDK** — High-level `query()` API instead of raw JSON-RPC protocol management.
 - **SSE real-time dashboard** — No WebSocket framework dependency. Pure EventSource + vanilla JS.
 - **Typed EventBus** — Full type safety with wildcard `onAny()` support, not just string-based PubSub.
@@ -139,6 +140,25 @@ tracker:
   terminalStates: ["closed"]
 ```
 
+### With GitLab (CE/EE)
+
+Works with both GitLab.com and self-hosted GitLab CE/EE instances.
+
+```yaml
+tracker:
+  kind: gitlab
+  endpoint: "https://gitlab.example.com"   # Your GitLab instance URL
+  apiKey: $GITLAB_TOKEN                     # Personal or project access token
+  projectSlug: "your-group/your-project"    # Full project path
+  activeStates: ["Open"]
+  terminalStates: ["Closed"]
+  assignee: "your-username"
+```
+
+GitLab incidents with a `severity` field (critical/high/medium/low) are automatically mapped to priority levels. Priority labels (`Priority::Urgent`, `Priority::High`, etc.) take precedence when both are present.
+
+See [examples/workflow-gitlab.md](examples/workflow-gitlab.md) for a full workflow example.
+
 ---
 
 ## Architecture
@@ -174,6 +194,7 @@ HttpServer (Hono)
 Trackers
   |-- LinearAdapter         GraphQL client + pagination
   |-- GitHubAdapter         REST + GraphQL client
+  |-- GitLabAdapter         REST client (CE/EE compatible)
   '-- MemoryTracker         In-memory (test/demo)
 ```
 
@@ -217,8 +238,9 @@ All configuration lives in `WORKFLOW.md` YAML frontmatter:
 
 | Section | Key | Default | Description |
 |---|---|---|---|
-| `tracker` | `kind` | — | `linear`, `github`, or `memory` |
+| `tracker` | `kind` | — | `linear`, `github`, `gitlab`, or `memory` |
 | | `apiKey` | — | API key (supports `$ENV_VAR` syntax) |
+| | `endpoint` | `null` | Tracker API base URL (required for GitLab) |
 | | `projectSlug` | — | Project identifier |
 | | `activeStates` | — | States that trigger dispatch |
 | | `terminalStates` | — | States that trigger cleanup |

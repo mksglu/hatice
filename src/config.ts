@@ -8,7 +8,7 @@ import { ConfigError } from './errors.js';
 // ---------------------------------------------------------------------------
 
 const trackerSchema = z.object({
-  kind: z.enum(['linear', 'github', 'memory']),
+  kind: z.enum(['linear', 'github', 'gitlab', 'memory']),
   endpoint: z.string().default('https://api.linear.app/graphql'),
   apiKey: z.string().default('demo'),
   projectSlug: z.string().default('demo'),
