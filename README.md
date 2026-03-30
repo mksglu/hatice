@@ -83,7 +83,7 @@ Hatice was inspired by the architectural patterns demonstrated in [Symphony](htt
 
 ```bash
 # Clone
-git clone https://github.com/mertcanaltin/hatice.git
+git clone https://github.com/mksglu/hatice.git
 cd hatice
 
 # Install
