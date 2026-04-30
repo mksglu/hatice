@@ -212,7 +212,7 @@ export class GitHubClient {
       : null;
 
     return {
-      id: node.id,
+      id: identifier,
       identifier,
       title: node.title,
       description: node.body,

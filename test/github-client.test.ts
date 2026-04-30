@@ -34,9 +34,9 @@ describe('GitHubClient', () => {
       const issues = await client.fetchIssues(['Todo', 'In Progress']);
 
       expect(issues).toHaveLength(2);
-      expect(issues[0].id).toBe('I_kwDOA1');
+      expect(issues[0].id).toBe('org/repo#42');
       expect(issues[0].title).toBe('Fix CI pipeline');
-      expect(issues[1].id).toBe('I_kwDOA2');
+      expect(issues[1].id).toBe('org/repo#43');
       expect(issues[1].title).toBe('Add feature X');
     });
 
@@ -204,6 +204,31 @@ describe('GitHubClient', () => {
           method: 'PATCH',
           body: JSON.stringify({ state: 'open' }),
         }),
+      );
+    });
+  });
+
+  describe('end-to-end: id returned from fetchIssues works with REST helpers', () => {
+    it('createComment hits the right REST URL when called with id from a fetched issue', async () => {
+      const fetchMock = vi.fn()
+        .mockResolvedValueOnce({
+          ok: true, status: 200, statusText: 'OK',
+          json: () => Promise.resolve(issuesFixture),
+          text: () => Promise.resolve(JSON.stringify(issuesFixture)),
+        })
+        .mockResolvedValueOnce({
+          ok: true, status: 201, statusText: 'Created',
+          json: () => Promise.resolve({ id: 1 }),
+          text: () => Promise.resolve(JSON.stringify({ id: 1 })),
+        });
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+      const issues = await client.fetchIssues(['Todo']);
+      await client.createComment(issues[0].id, 'follow-up');
+
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        'https://api.github.com/repos/org/repo/issues/42/comments',
+        expect.objectContaining({ method: 'POST' }),
       );
     });
   });
