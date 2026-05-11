@@ -211,10 +211,18 @@ export class Orchestrator extends EventEmitter<haticeEvents> {
     this.state.claim(issue.id);
 
     try {
-      const workspacePath = await this.workspace.ensureWorkspace(issue.identifier, issue.id);
+      const workspacePath = await this.workspace.ensureWorkspace(issue.identifier, issue.id, issue.title);
       const workflow = this.workflowStore.getCurrentWorkflow();
       if (!workflow) {
         throw new Error('No workflow loaded');
+      }
+
+      if (this.config.hooks.beforeRun) {
+        await this.workspace.runHook('beforeRun', this.config.hooks.beforeRun, workspacePath, {
+          issueId: issue.id,
+          identifier: issue.identifier,
+          title: issue.title ?? '',
+        });
       }
 
       const abortController = new AbortController();
@@ -248,6 +256,17 @@ export class Orchestrator extends EventEmitter<haticeEvents> {
 
       const promise = runner.run().then(async result => {
         clearInterval(stallTimer);
+        if (this.config.hooks.afterRun) {
+          try {
+            await this.workspace.runHook('afterRun', this.config.hooks.afterRun, workspacePath, {
+              issueId: issue.id,
+              identifier: issue.identifier,
+              title: issue.title ?? '',
+            });
+          } catch (e) {
+            this.log.warn({ err: e, issueId: issue.id }, 'afterRun hook failed, continuing');
+          }
+        }
         await this.handleWorkerExit(issue.id, result);
         return result;
       }).catch(e => {

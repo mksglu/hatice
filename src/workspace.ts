@@ -49,7 +49,7 @@ export class Workspace {
     return join(this.rootDir, sanitized);
   }
 
-  async ensureWorkspace(identifier: string, issueId: string): Promise<string> {
+  async ensureWorkspace(identifier: string, issueId: string, title?: string): Promise<string> {
     const workspacePath = this.getWorkspacePath(identifier);
     await this.validatePathSafety(workspacePath);
 
@@ -62,7 +62,7 @@ export class Workspace {
     }
 
     if (isNew && this.hooks.afterCreate) {
-      await this.runHook('afterCreate', this.hooks.afterCreate, workspacePath, { issueId, identifier });
+      await this.runHook('afterCreate', this.hooks.afterCreate, workspacePath, { issueId, identifier, title: title ?? '' });
     }
 
     if (!isNew) {
@@ -125,6 +125,7 @@ export class Workspace {
           hatice_ISSUE_ID: context.issueId ?? '',
           hatice_IDENTIFIER: context.identifier ?? '',
           hatice_WORKSPACE: workspacePath,
+          hatice_TITLE: context.title ?? '',
         },
         stdio: ['ignore', 'pipe', 'pipe'],
       });
