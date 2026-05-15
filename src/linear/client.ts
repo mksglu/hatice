@@ -219,13 +219,19 @@ export class LinearClient {
   }
 
   async updateIssueState(issueId: string, stateName: string): Promise<void> {
+    // Workflow states are per-team in Linear. Without scoping by team, this can
+    // return a state belonging to a different team and the issueUpdate mutation
+    // fails with: "Discrepancy between issue team and state, cycle or project".
     const statesData = await this.graphql<WorkflowStatesResult>(WORKFLOW_STATES_QUERY, {
-      filter: { name: { eq: stateName } },
+      filter: {
+        name: { eq: stateName },
+        team: { key: { eq: this.projectSlug } },
+      },
     });
 
     const stateNode = statesData.workflowStates.nodes[0];
     if (!stateNode) {
-      throw new TrackerError(`Workflow state "${stateName}" not found`);
+      throw new TrackerError(`Workflow state "${stateName}" not found in team "${this.projectSlug}"`);
     }
 
     await this.graphql(UPDATE_ISSUE_MUTATION, { issueId, stateId: stateNode.id });

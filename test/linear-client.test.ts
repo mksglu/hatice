@@ -257,6 +257,30 @@ describe('LinearClient', () => {
       expect(secondBody.variables.issueId).toBe('issue-1');
       expect(secondBody.variables.stateId).toBe('state-done');
     });
+
+    it('scopes workflow state lookup to the configured team', async () => {
+      // Linear workflow states are per-team. Many teams have a state called "Done",
+      // each with a different UUID. Without team scoping, the API can return a
+      // foreign-team state ID and the issue update will fail with:
+      //   "Discrepancy between issue team and state, cycle or project"
+      const { fetchFn, calls } = mockFetch([
+        {
+          body: {
+            data: { workflowStates: { nodes: [{ id: 'state-done-proj', name: 'Done' }] } },
+          },
+        },
+        {
+          body: { data: { issueUpdate: { success: true } } },
+        },
+      ]);
+      globalThis.fetch = fetchFn;
+
+      const client = makeClient(); // makeClient passes 'PROJ' as the team key
+      await client.updateIssueState('issue-1', 'Done');
+
+      const firstBody = JSON.parse(calls[0].init.body as string);
+      expect(firstBody.variables.filter.team.key.eq).toBe('PROJ');
+    });
   });
 
   describe('fetchViewer', () => {
