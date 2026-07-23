@@ -115,7 +115,7 @@ describe('validateConfig', () => {
     expect(cfg.agent.maxConcurrentAgentsByState).toEqual({});
 
     // claude defaults
-    expect(cfg.claude.permissionMode).toBe('bypassPermissions');
+    expect(cfg.claude.permissionMode).toBe('default');
     expect(cfg.claude.model).toBeNull();
     expect(cfg.claude.turnTimeoutMs).toBe(3_600_000);
     expect(cfg.claude.stallTimeoutMs).toBe(300_000);
