@@ -118,6 +118,7 @@ export interface AgentConfig {
 export interface ClaudeConfig {
   model: string | null;
   permissionMode: string;
+  settingSources: string[] | null;
   turnTimeoutMs: number;
   stallTimeoutMs: number;
   allowedTools: string[] | null;

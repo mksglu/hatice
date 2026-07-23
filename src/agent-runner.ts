@@ -167,6 +167,7 @@ export class AgentRunner {
       permissionMode: claudeConfig.permissionMode,
       ...(claudeConfig.permissionMode === 'bypassPermissions' && { allowDangerouslySkipPermissions: true }),
       env: cleanEnv,
+      ...(claudeConfig.settingSources && { settingSources: claudeConfig.settingSources }),
       ...(claudeConfig.model && { model: claudeConfig.model }),
       ...(claudeConfig.allowedTools && { allowedTools: claudeConfig.allowedTools }),
       ...(claudeConfig.disallowedTools && { disallowedTools: claudeConfig.disallowedTools }),
