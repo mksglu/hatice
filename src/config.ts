@@ -45,7 +45,7 @@ const agentSchema = z.object({
 
 const claudeSchema = z.object({
   model: z.string().nullable().default(null),
-  permissionMode: z.string().default('bypassPermissions'),
+  permissionMode: z.string().default('default'),
   turnTimeoutMs: z.number().default(3_600_000),
   stallTimeoutMs: z.number().default(300_000),
   allowedTools: z.array(z.string()).nullable().default(null),
@@ -82,7 +82,7 @@ const haticeConfigSchema = z.object({
   }),
   claude: claudeSchema.default({
     model: null,
-    permissionMode: 'bypassPermissions',
+    permissionMode: 'default',
     turnTimeoutMs: 3_600_000,
     stallTimeoutMs: 300_000,
     allowedTools: null,
