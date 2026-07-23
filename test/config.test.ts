@@ -116,6 +116,7 @@ describe('validateConfig', () => {
 
     // claude defaults
     expect(cfg.claude.permissionMode).toBe('bypassPermissions');
+    expect(cfg.claude.settingSources).toEqual(['user', 'project', 'local']);
     expect(cfg.claude.model).toBeNull();
     expect(cfg.claude.turnTimeoutMs).toBe(3_600_000);
     expect(cfg.claude.stallTimeoutMs).toBe(300_000);

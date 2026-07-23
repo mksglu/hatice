@@ -45,6 +45,7 @@ function makeClaudeConfig(overrides: Partial<ClaudeConfig> = {}): ClaudeConfig {
   return {
     model: 'claude-sonnet-4-20250514',
     permissionMode: 'default',
+    settingSources: ['user', 'project', 'local'],
     turnTimeoutMs: 60_000,
     stallTimeoutMs: 30_000,
     allowedTools: null,

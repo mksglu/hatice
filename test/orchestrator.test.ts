@@ -107,6 +107,7 @@ function makeConfig(overrides: Partial<haticeConfig> = {}): haticeConfig {
     claude: {
       model: null,
       permissionMode: 'bypassPermissions',
+      settingSources: ['user', 'project', 'local'],
       turnTimeoutMs: 3_600_000,
       stallTimeoutMs: 300_000,
       allowedTools: null,
